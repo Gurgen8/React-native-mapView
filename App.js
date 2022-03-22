@@ -8,8 +8,9 @@ import {
   Image,
   TouchableOpacity,
   Platform,
+  PermissionsAndroid,
 } from 'react-native';
-import Geolocation from '@react-native-community/geolocation';
+import Geolocation from 'react-native-geolocation-service';
 import {PERMISSIONS, RESULTS, request} from 'react-native-permissions';
 import MapView, {Marker, PROVIDER_GOOGLE} from 'react-native-maps';
 
@@ -21,8 +22,8 @@ const platfrom = Platform.select({
     os: PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
   },
 });
-
 Geolocation.setRNConfiguration({skipPermissionRequests: true});
+
 const tank = require('./src/assets/images/Tank.png');
 const artillery = require('./src/assets/images/Artillery.png');
 const soldier = require('./src/assets/images/Soldier.png');
@@ -60,9 +61,9 @@ const App = () => {
   });
   const onSetEvent = e => {
     setMark(e.nativeEvent.coordinate);
-    // setTimeout(() => {
-    //   setVisible(true);
-    // }, 3000);
+    setTimeout(() => {
+      setVisible(true);
+    }, 3000);
   };
   const renderItem = ({item}) => {
     const onSelectType = () => {
@@ -87,19 +88,21 @@ const App = () => {
     );
   };
   const getMyLocation = async () => {
-    if (Platform.OS === 'ios') {
-      Geolocation.getCurrentPosition(position => {
-        const newLocation = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        };
-        setCoordinate(newLocation);
-      });
-    } else {
-      try {
+    try {
+      if (Platform.OS === 'ios') {
+        Geolocation.getCurrentPosition(position => {
+          const newLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          setCoordinate(newLocation);
+        });
+      } else {
         const granted = await request(platfrom.os);
+        console.log(granted);
         if (granted === RESULTS.GRANTED) {
           Geolocation.getCurrentPosition(position => {
+            console.log('asdas');
             const newLocation = {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
@@ -108,30 +111,31 @@ const App = () => {
             console.log(newLocation);
           });
         }
-      } catch (e) {
-        console.log('error', e);
       }
+    } catch (e) {
+      console.log('error', e);
     }
   };
-
-  // const requestLocationPermission = async (resolve, reject) => {
-  //   try {
-  //     const result = await request(platfrom.os);
-  //     console.log('res', result);
-  //     if (result === RESULTS.GRANTED) {
-  //       try {
-  //         const position = await this.getCurrentLocation();
-  //         return resolve({status: result, position});
-  //       } catch (error) {
-  //         return reject(error);
-  //       }
-  //     } else {
-  //       return reject(result);
-  //     }
-  //   } catch (error) {
-  //     return reject(error);
-  //   }
-  // };
+  async function requestLocationPermission() {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Example App',
+          message: 'Example App access to your location ',
+        },
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log('You can use the location');
+        alert('You can use the location');
+      } else {
+        console.log('location permission denied');
+        alert('Location permission denied');
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  }
 
   return (
     <View style={{flex: 1}}>
